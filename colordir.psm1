@@ -25,11 +25,13 @@ $Icons = @{
     ".sh"   = [char]0xf120;
     ".bat"  = [char]0xf120;
     ".exe"  = [char]0xf013;
+    ".dll"  = [char]0xf085;
     ".msi"  = [char]0xf8d3;
     ".png"  = [char]0xf03e;
     ".gif"  = [char]0xf03e;
     ".jpg"  = [char]0xf03e;
     ".jpeg" = [char]0xf03e;
+    ".bmp"  = [char]0xf03e;
     ".txt"  = [char]0xe612;
     ".md"   = [char]0xe73e;
     ".mp3"  = [char]0xf028;
@@ -47,6 +49,7 @@ $Icons = @{
     ".webm" = [char]0xf008;
     ".rdb"  = [char]0xe76d;
     ".blend"= [char]0xf5aa;
+    ".lock" = [char]0xf023;
     ""      = [char]0xf15b;
     ".torrent"  = [char]0xf019;
     ".gitignore"= [char]0xe702;
@@ -68,8 +71,8 @@ function Get-ColoredItem {
         [Switch]$IgnoreFolderSize = $False
     )
 
-    $Folders = Get-ChildItem $Dir -Directory
-    $Items = Get-ChildItem $Dir -File
+    $Folders = Get-ChildItem $Dir -Directory -Force
+    $Items = Get-ChildItem $Dir -File -Force
 
     if ($Git) {
         $Found = $False
@@ -145,10 +148,16 @@ function Get-ColoredItem {
             $Name = "$Name1...$Name2"
         }
         if (Test-ReparsePoint $d) {
-            Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor Magenta
+            $Color = "Magenta"
         } else {
-            Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor Blue
+            $Color = "Blue"
         }
+        if ([convert]::ToString($d.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
+            $Color = "Dark$Color"
+        }
+        
+        Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color
+
     }
     foreach ($i in $Items) {
         $Icon = $Icons[$i.extension]
@@ -167,12 +176,17 @@ function Get-ColoredItem {
             $Name = "$Name1...$Name2"
         }
         if ($ExecutableTypes -contains $i.Extension) {
-            Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor Yellow
+            $Color = "Yellow"
         } elseif ($i.Extension -eq ".lnk") {
-            Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor Magenta
+            $Color = "Magenta"
         } else {
-            Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor Green
+            $Color = "Green"
         }
+        if ([convert]::ToString($d.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
+            $Color = "Dark$Color"
+        }
+
+        Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color
     }
 }
 
