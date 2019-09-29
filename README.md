@@ -12,9 +12,10 @@ A module meant to be a purely PowerShell alternative to the written in Ruby, mor
 - [ ] Modularity of display
 
 ## Installation
-Before installing:
+#### Before installing:
+
 Make sure you're using a patched font from [NerdFonts](https://www.nerdfonts.com/). If you're not, either download an already patched font from their site (my suggestions would be BlexMono, FiraCode or Hack), or patch your own using their patching tool.
----
+***
 Until I publish it on Powershell Gallery, you'll need to
 1. Clone this repository 
   ```
