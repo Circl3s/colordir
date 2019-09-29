@@ -47,6 +47,7 @@ $Icons = @{
     ".flv"  = [char]0xf008;
     ".wmv"  = [char]0xf008;
     ".webm" = [char]0xf008;
+    ".mkv"  = [char]0xf008;
     ".rdb"  = [char]0xe76d;
     ".blend"= [char]0xf5aa;
     ".lock" = [char]0xf023;
@@ -55,6 +56,7 @@ $Icons = @{
     ".gitignore"= [char]0xe702;
     ".gitconfig"= [char]0xe702;
     ".mcmeta"   = [char]0xf872;
+    ".nomedia"  = [char]0xf070;
 }
 
 $ExecutableTypes = ".exe", ".msi", ".bat", ".ps1"
@@ -155,7 +157,7 @@ function Get-ColoredItem {
         if ([convert]::ToString($d.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
             $Color = "Dark$Color"
         }
-        
+
         Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color
 
     }
@@ -205,9 +207,9 @@ function Get-Size {
     $size = "0"
     try {
         if ($Recursive) {
-            $foldersize = Get-ChildItem "$Item" -Recurse | Measure-Object -Property Length -Sum -ErrorAction Stop
+            $foldersize = Get-ChildItem "$Item" -Force -Recurse | Measure-Object -Property Length -Sum -ErrorAction Stop
         } else {
-            $foldersize = Get-ChildItem "$Item" | Measure-Object -Property Length -Sum -ErrorAction Stop
+            $foldersize = Get-ChildItem "$Item" -Force | Measure-Object -Property Length -Sum -ErrorAction Stop
         }
     
         Switch ($True) {
