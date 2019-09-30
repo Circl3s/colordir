@@ -35,6 +35,7 @@ Until I publish it on Powershell Gallery, you'll need to
 * File/folder name trimming doesn't quite work with some non-English symbols (for example Japanese file names)
 * It vomits non-terminating errors if the terminal is too small to even trim the file/folder names
 * Due to calculating folder sizes when run, running it for example in C:\ can take a **long** time. Use -IgnoreFolderSizes when necessary.
+* It doesn't like square brackets.
 
 ### If you see icons that are missing...
 Check if they are [supported by NerdFonts](https://www.nerdfonts.com/cheat-sheet), and if they are - create an issue or add them and create a pull request, I don't care...
