@@ -70,7 +70,8 @@ function Get-ColoredItem {
         [ValidateSet("NameDescending", "NameAscending", "Newest", "Oldest", "SizeDescending", "SizeAscending")]
         [String]$SortBy = "NameAscending",
         [Switch]$Git = $False,
-        [Switch]$IgnoreFolderSize = $False
+        [Switch]$IgnoreFolderSize = $False,
+        [Switch]$NoIcons = $False
     )
 
     $Folders = Get-ChildItem $Dir -Directory -Force
@@ -126,19 +127,30 @@ function Get-ColoredItem {
 
     Write-Host "Mode$([char]0x0009)Size$([char]0x0009)Last Written$([char]0x0009)     Name"
 
+    if (!$NoIcons) {
+        $ADI = [char]0xf023
+    } else {
+        $ADI = "X"
+    }
+
     foreach ($d in $Folders) {
         $Icon = ""
-        Switch ($d.name) {
-            ".git" {$Icon = [char]0xe5fb}
-            "config" {$Icon = [char]0xe5fc}
-            "node_modules" {$Icon = [char]0xe5fa}
-            "src" {$Icon = [char]0xf121}
-            Default {$Icon = [char]0xe5ff}
+        if (!$NoIcons) {
+            Switch ($d.name) {
+                ".git" {$Icon = [char]0xe5fb}
+                "config" {$Icon = [char]0xe5fc}
+                "node_modules" {$Icon = [char]0xe5fa}
+                "src" {$Icon = [char]0xf121}
+                Default {$Icon = [char]0xe5ff}
+            }    
         }
         if (!$IgnoreFolderSize) {
-            $size = Get-Size "$d" -Recursive
+            $r = Get-Size "$d" -Recursive
+            $size = $r[0]
+            $AccessDenied = $r[1]
         } else {
             $size = " "
+            $AccessDenied = $False
         }
         $Name = $d.Name
         $Screenspace = $Host.UI.RawUI.WindowSize.Width - 16 - "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) ".Length
@@ -158,16 +170,22 @@ function Get-ColoredItem {
             $Color = "Dark$Color"
         }
 
-        Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color
+        Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color -NoNewline
+        if ($AccessDenied) {Write-Host " $ADI" -ForegroundColor Red -NoNewline}
+        Write-Host ""
 
     }
     foreach ($i in $Items) {
-        $Icon = $Icons[$i.extension]
-        if ($Icon -eq $_) {$Icon = $Icons[""]}
-        Switch ($i.Name) {
-            "LICENSE" {$Icon = [char]0xf1f9}
+        if (!$NoIcons) {
+            $Icon = $Icons[$i.extension]
+            if ($Icon -eq $_) {$Icon = $Icons[""]}
+            Switch ($i.Name) {
+                "LICENSE" {$Icon = [char]0xf1f9}
+            }    
         }
-        $size = Get-Size "$i"
+        $r = Get-Size "$i"
+        $size = $r[0]
+        $AccessDenied = $r[1]
         $Name = $i.Name
         $Screenspace = $Host.UI.RawUI.WindowSize.Width - 16 - "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) ".Length
         [Int]$HSS = $Screenspace / 2
@@ -184,11 +202,13 @@ function Get-ColoredItem {
         } else {
             $Color = "Green"
         }
-        if ([convert]::ToString($d.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
+        if ([convert]::ToString($i.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
             $Color = "Dark$Color"
         }
 
-        Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color
+        Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color -NoNewline
+        if ($AccessDenied) {Write-Host " $ADI" -ForegroundColor Red -NoNewline}
+        Write-Host ""
     }
 }
 
@@ -204,12 +224,13 @@ function Get-Size {
         [Switch]$Recursive = $False
     )
 
-    $size = "0"
+    $acc = $False
+
     try {
         if ($Recursive) {
-            $foldersize = Get-ChildItem "$Item" -Force -Recurse | Measure-Object -Property Length -Sum -ErrorAction Stop
+            $foldersize = Get-ChildItem "$Item" -Force -Recurse -ErrorAction Stop | Measure-Object -Property Length -Sum -ErrorAction Stop
         } else {
-            $foldersize = Get-ChildItem "$Item" -Force | Measure-Object -Property Length -Sum -ErrorAction Stop
+            $foldersize = Get-Item "$Item" -Force -ErrorAction Stop | Measure-Object -Property Length -Sum -ErrorAction Stop
         }
     
         Switch ($True) {
@@ -222,11 +243,14 @@ function Get-Size {
             ($foldersize.sum -gt 1TB) {$size = "$([math]::Round(($foldersize.sum / 1TB), 2))TB"}
             Default {$size = $foldersize.sum}
         }
-    } catch {
+    } catch [System.Management.Automation.PSArgumentException] {
         $size = 0
+    } catch {
+        $acc = $True
+        $size = "?"
     }
-    if ($size -eq $_) {$size = 0}
-    return $size
+    if ($size -eq $nil) {$size = 0}
+    return $size, $acc
 }
 
 function Test-ReparsePoint([string]$path) {
