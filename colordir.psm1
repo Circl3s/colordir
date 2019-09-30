@@ -64,6 +64,19 @@ $Icons = @{
     ".nomedia"  = [char]0xf070;
 }
 
+$GitColors = @{
+    "M  " = "Yellow";
+    "A  " = "Cyan";
+    "D  " = "Red";
+    "R  " = "White";
+    "C  " = "Blue";
+    "T  " = "Magenta";
+    "U  " = "DarkRed";
+    "?  " = "DarkRed";
+    "v  " = "Green";
+    "$([char]0xf00c)  "  = "Green";
+}
+
 $ExecutableTypes = ".exe", ".msi", ".bat", ".ps1"
 
 function Get-ColoredItem {
@@ -97,17 +110,24 @@ function Get-ColoredItem {
     if ($WillRun) {
         if ($Git) {
             $Found = $False
-            foreach ($d in $Folders) {
-                if ($d.Name -eq ".git") {
+            try {
+                if ((Invoke-Command {git rev-parse --is-inside-work-tree}) -eq "true") {
                     $Found = $True
-                    break
                 }
-            }
-            if (!$Found) {
-                Write-Host "Directory is not a Git repository, ignoring the Git argument" -ForegroundColor DarkRed
-                $Git = $False
-            } else {
-                Write-Host "This option is not yet supported ;)" -ForegroundColor Cyan
+                if (!$Found) {
+                    Write-Host "Directory is not a Git repository, ignoring the Git argument" -ForegroundColor DarkRed
+                    $Git = $False
+                } else {
+                    if (!$NoIcons) {
+                        $commit = [char]0xe729
+                    } else {
+                        $commit = "Git:"
+                    }
+                    Write-Host "$($commit) $(Invoke-Command {git show-branch --current})" -ForegroundColor Cyan
+                    $GitDiff = (Invoke-Command {git status --short}).Split("`n")
+                }
+            } catch {
+                Write-Host "Git not detected. Are you sure the executable is in your path?" -ForegroundColor Red
                 $Git = $False
             }
         }
@@ -143,7 +163,15 @@ function Get-ColoredItem {
             }
         }
 
-        Write-Host "Mode$([char]0x0009)Size$([char]0x0009)Last Written$([char]0x0009)     Name"
+        if ($Git) {
+            if ($NoIcons) {
+                $GitLabel = "S  "
+            } else {
+                $GitLabel = "$([char]0xf1d3)  "
+            }
+        }
+
+        Write-Host "Mode$([char]0x0009)Size$([char]0x0009)Last Written$([char]0x0009)     $($GitLabel)Name"
 
         foreach ($d in $Folders) {
             $Icon = ""
@@ -165,6 +193,14 @@ function Get-ColoredItem {
                 $AccessDenied = $False
             }
             $Name = $d.Name
+            if (Test-ReparsePoint $d) {
+                $Color = "Magenta"
+                if ($d.Target -ne $_) {
+                    $Name = "$Name -> $($d.Target)"
+                }
+            } else {
+                $Color = "Blue"
+            }
             $Screenspace = $Host.UI.RawUI.WindowSize.Width - 16 - "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) ".Length
             [Int]$HSS = $Screenspace / 2
             if ($Name.Length -gt $Screenspace) {
@@ -173,20 +209,19 @@ function Get-ColoredItem {
                 $Name2 = $Name.subString($HSS + 3 + $Dif, $Name.Length - ($HSS + 3 + $Dif))
                 $Name = "$Name1...$Name2"
             }
-            if (Test-ReparsePoint $d) {
-                $Color = "Magenta"
-            } else {
-                $Color = "Blue"
-            }
             if ([convert]::ToString($d.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
                 $Color = "Dark$Color"
             }
 
-            Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color -NoNewline
+            if ($Git) {
+                $GitIcon = "   "
+            }
+
+            Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($GitIcon)$($Icon) $($Name)" -ForegroundColor $Color -NoNewline
             if ($AccessDenied) {Write-Host " $ADI" -ForegroundColor Red -NoNewline}
             Write-Host ""
-
         }
+
         foreach ($i in $Items) {
             if (!$NoIcons) {
                 $Icon = $Icons[$i.extension]
@@ -219,7 +254,28 @@ function Get-ColoredItem {
                 $Color = "Dark$Color"
             }
 
-            Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color -NoNewline
+            if ($Git) {
+                $GitIcon = $_
+                foreach ($s in $GitDiff) {
+                    if ($s -like "*$($i.Name)*") {
+                        $_ = $s -match "(?:[MADCRTUXB]|\?\?)\s*\S*"
+                        $GitIcon = "$($Matches[0][0])  "
+                    }
+                }
+                if ($GitIcon -eq $_) {
+                    if ($NoIcons) {
+                        $GitIcon = "v  "
+                    } else {
+                        $GitIcon = "$([char]0xf00c)  "
+                    }
+                }
+            } else {
+                $GitIcon = ""
+            }
+
+            Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  " -ForegroundColor $Color -NoNewline
+            if ($Git) {Write-Host "$($GitIcon)" -ForegroundColor $GitColors[$GitIcon] -NoNewline}
+            Write-Host "$($Icon) $($Name)" -ForegroundColor $Color -NoNewline
             if ($AccessDenied) {Write-Host " $ADI" -ForegroundColor Red -NoNewline}
             Write-Host ""
         }
