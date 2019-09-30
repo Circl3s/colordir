@@ -51,6 +51,11 @@ $Icons = @{
     ".rdb"  = [char]0xe76d;
     ".blend"= [char]0xf5aa;
     ".lock" = [char]0xf023;
+    ".pgp"  = [char]0xf084;
+    ".pem"  = [char]0xf084;
+    ".ppk"  = [char]0xf084;
+    ".key"  = [char]0xf084;
+    ".pub"  = [char]0xf084;
     ""      = [char]0xf15b;
     ".torrent"  = [char]0xf019;
     ".gitignore"= [char]0xe702;
@@ -74,58 +79,14 @@ function Get-ColoredItem {
         [Switch]$NoIcons = $False
     )
 
-    $Folders = Get-ChildItem $Dir -Directory -Force
-    $Items = Get-ChildItem $Dir -File -Force
+    $WillRun = $True
 
-    if ($Git) {
-        $Found = $False
-        foreach ($d in $Folders) {
-            if ($d.Name -eq ".git") {
-                $Found = $True
-                break
-            }
-        }
-        if (!$Found) {
-            Write-Host "Directory is not a Git repository, ignoring the Git argument" -ForegroundColor DarkRed
-            $Git = $False
-        } else {
-            Write-Host "This option is not yet supported ;)" -ForegroundColor Cyan
-            $Git = $False
-        }
+    try {
+        $Folders = Get-ChildItem $Dir -Directory -Force -ErrorAction Stop
+        $Items = Get-ChildItem $Dir -File -Force -ErrorAction Stop    
+    } catch {
+        $WillRun = $False
     }
-
-    Switch ($SortBy) {
-        "NameDescending" {
-            $Folders = $Folders | Sort-Object -Property Name -Descending
-            $Items = $Items | Sort-Object -Property Name -Descending
-        }
-        "NameAscending" {
-            $Folders = $Folders | Sort-Object -Property Name
-            $Items = $Items | Sort-Object -Property Name
-        }
-        "SizeDescending" {
-            if (!$IgnoreFolderSize) {
-                $Folders = $Folders | Sort-Object {(Get-ChildItem $_ -Recurse | Measure-Object -Property Length -Sum).sum} -Descending
-            }
-            $Items = $Items | Sort-Object -Property Length -Descending
-        }
-        "SizeAscending" {
-            if (!$IgnoreFolderSize) {
-                $Folders = $Folders | Sort-Object {(Get-ChildItem $_ -Recurse | Measure-Object -Property Length -Sum).sum}
-            }
-            $Items = $Items | Sort-Object -Property Length
-        }
-        "Newest" {
-            $Folders = $Folders | Sort-Object -Property LastWriteTime -Descending
-            $Items = $Items | Sort-Object -Property LastWriteTime -Descending
-        }
-        "Oldest" {
-            $Folders = $Folders | Sort-Object -Property LastWriteTime
-            $Items = $Items | Sort-Object -Property LastWriteTime
-        }
-    }
-
-    Write-Host "Mode$([char]0x0009)Size$([char]0x0009)Last Written$([char]0x0009)     Name"
 
     if (!$NoIcons) {
         $ADI = [char]0xf023
@@ -133,82 +94,137 @@ function Get-ColoredItem {
         $ADI = "X"
     }
 
-    foreach ($d in $Folders) {
-        $Icon = ""
-        if (!$NoIcons) {
-            Switch ($d.name) {
-                ".git" {$Icon = [char]0xe5fb}
-                "config" {$Icon = [char]0xe5fc}
-                "node_modules" {$Icon = [char]0xe5fa}
-                "src" {$Icon = [char]0xf121}
-                Default {$Icon = [char]0xe5ff}
-            }    
+    if ($WillRun) {
+        if ($Git) {
+            $Found = $False
+            foreach ($d in $Folders) {
+                if ($d.Name -eq ".git") {
+                    $Found = $True
+                    break
+                }
+            }
+            if (!$Found) {
+                Write-Host "Directory is not a Git repository, ignoring the Git argument" -ForegroundColor DarkRed
+                $Git = $False
+            } else {
+                Write-Host "This option is not yet supported ;)" -ForegroundColor Cyan
+                $Git = $False
+            }
         }
-        if (!$IgnoreFolderSize) {
-            $r = Get-Size "$d" -Recursive
+
+        Switch ($SortBy) {
+            "NameDescending" {
+                $Folders = $Folders | Sort-Object -Property Name -Descending
+                $Items = $Items | Sort-Object -Property Name -Descending
+            }
+            "NameAscending" {
+                $Folders = $Folders | Sort-Object -Property Name
+                $Items = $Items | Sort-Object -Property Name
+            }
+            "SizeDescending" {
+                if (!$IgnoreFolderSize) {
+                    $Folders = $Folders | Sort-Object {(Get-ChildItem $_ -Recurse | Measure-Object -Property Length -Sum).sum} -Descending
+                }
+                $Items = $Items | Sort-Object -Property Length -Descending
+            }
+            "SizeAscending" {
+                if (!$IgnoreFolderSize) {
+                    $Folders = $Folders | Sort-Object {(Get-ChildItem $_ -Recurse | Measure-Object -Property Length -Sum).sum}
+                }
+                $Items = $Items | Sort-Object -Property Length
+            }
+            "Newest" {
+                $Folders = $Folders | Sort-Object -Property LastWriteTime -Descending
+                $Items = $Items | Sort-Object -Property LastWriteTime -Descending
+            }
+            "Oldest" {
+                $Folders = $Folders | Sort-Object -Property LastWriteTime
+                $Items = $Items | Sort-Object -Property LastWriteTime
+            }
+        }
+
+        Write-Host "Mode$([char]0x0009)Size$([char]0x0009)Last Written$([char]0x0009)     Name"
+
+        foreach ($d in $Folders) {
+            $Icon = ""
+            if (!$NoIcons) {
+                Switch ($d.name) {
+                    ".git" {$Icon = [char]0xe5fb}
+                    "config" {$Icon = [char]0xe5fc}
+                    "node_modules" {$Icon = [char]0xe5fa}
+                    "src" {$Icon = [char]0xf121}
+                    Default {$Icon = [char]0xe5ff}
+                }
+            }
+            if (!$IgnoreFolderSize) {
+                $r = Get-Size "$d" -Recursive
+                $size = $r[0]
+                $AccessDenied = $r[1]
+            } else {
+                $size = " "
+                $AccessDenied = $False
+            }
+            $Name = $d.Name
+            $Screenspace = $Host.UI.RawUI.WindowSize.Width - 16 - "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) ".Length
+            [Int]$HSS = $Screenspace / 2
+            if ($Name.Length -gt $Screenspace) {
+                $Dif = $Name.Length - $Screenspace
+                $Name1 = $Name.subString(0, $HSS - 3)
+                $Name2 = $Name.subString($HSS + 3 + $Dif, $Name.Length - ($HSS + 3 + $Dif))
+                $Name = "$Name1...$Name2"
+            }
+            if (Test-ReparsePoint $d) {
+                $Color = "Magenta"
+            } else {
+                $Color = "Blue"
+            }
+            if ([convert]::ToString($d.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
+                $Color = "Dark$Color"
+            }
+
+            Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color -NoNewline
+            if ($AccessDenied) {Write-Host " $ADI" -ForegroundColor Red -NoNewline}
+            Write-Host ""
+
+        }
+        foreach ($i in $Items) {
+            if (!$NoIcons) {
+                $Icon = $Icons[$i.extension]
+                if ($Icon -eq $_) {$Icon = $Icons[""]}
+                Switch ($True) {
+                    ($i.Name -like "*LICENSE*") {$Icon = [char]0xf1f9}
+                    ($i.Name -like "*id_rsa*") {$Icon = [char]0xf084}
+                }    
+            }
+            $r = Get-Size "$i"
             $size = $r[0]
             $AccessDenied = $r[1]
-        } else {
-            $size = " "
-            $AccessDenied = $False
-        }
-        $Name = $d.Name
-        $Screenspace = $Host.UI.RawUI.WindowSize.Width - 16 - "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) ".Length
-        [Int]$HSS = $Screenspace / 2
-        if ($Name.Length -gt $Screenspace) {
-            $Dif = $Name.Length - $Screenspace
-            $Name1 = $Name.subString(0, $HSS - 3)
-            $Name2 = $Name.subString($HSS + 3 + $Dif, $Name.Length - ($HSS + 3 + $Dif))
-            $Name = "$Name1...$Name2"
-        }
-        if (Test-ReparsePoint $d) {
-            $Color = "Magenta"
-        } else {
-            $Color = "Blue"
-        }
-        if ([convert]::ToString($d.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
-            $Color = "Dark$Color"
-        }
+            $Name = $i.Name
+            $Screenspace = $Host.UI.RawUI.WindowSize.Width - 16 - "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) ".Length
+            [Int]$HSS = $Screenspace / 2
+            if ($Name.Length -gt $Screenspace) {
+                $Dif = $Name.Length - $Screenspace
+                $Name1 = $Name.subString(0, $HSS - 3)
+                $Name2 = $Name.subString($HSS + 3 + $Dif, $Name.Length - ($HSS + 3 + $Dif))
+                $Name = "$Name1...$Name2"
+            }
+            if ($ExecutableTypes -contains $i.Extension) {
+                $Color = "Yellow"
+            } elseif ($i.Extension -eq ".lnk") {
+                $Color = "Magenta"
+            } else {
+                $Color = "Green"
+            }
+            if ([convert]::ToString($i.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
+                $Color = "Dark$Color"
+            }
 
-        Write-Host "$($d.Mode)$([char]0x0009)$($size)$([char]0x0009)$($d.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color -NoNewline
-        if ($AccessDenied) {Write-Host " $ADI" -ForegroundColor Red -NoNewline}
-        Write-Host ""
-
-    }
-    foreach ($i in $Items) {
-        if (!$NoIcons) {
-            $Icon = $Icons[$i.extension]
-            if ($Icon -eq $_) {$Icon = $Icons[""]}
-            Switch ($i.Name) {
-                "LICENSE" {$Icon = [char]0xf1f9}
-            }    
+            Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color -NoNewline
+            if ($AccessDenied) {Write-Host " $ADI" -ForegroundColor Red -NoNewline}
+            Write-Host ""
         }
-        $r = Get-Size "$i"
-        $size = $r[0]
-        $AccessDenied = $r[1]
-        $Name = $i.Name
-        $Screenspace = $Host.UI.RawUI.WindowSize.Width - 16 - "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) ".Length
-        [Int]$HSS = $Screenspace / 2
-        if ($Name.Length -gt $Screenspace) {
-            $Dif = $Name.Length - $Screenspace
-            $Name1 = $Name.subString(0, $HSS - 3)
-            $Name2 = $Name.subString($HSS + 3 + $Dif, $Name.Length - ($HSS + 3 + $Dif))
-            $Name = "$Name1...$Name2"
-        }
-        if ($ExecutableTypes -contains $i.Extension) {
-            $Color = "Yellow"
-        } elseif ($i.Extension -eq ".lnk") {
-            $Color = "Magenta"
-        } else {
-            $Color = "Green"
-        }
-        if ([convert]::ToString($i.Attributes.Value__, 2) -match "\d?\d?\d?\d?1\d$") {
-            $Color = "Dark$Color"
-        }
-
-        Write-Host "$($i.Mode)$([char]0x0009)$($size)$([char]0x0009)$($i.LastWriteTime)  $($Icon) $($Name)" -ForegroundColor $Color -NoNewline
-        if ($AccessDenied) {Write-Host " $ADI" -ForegroundColor Red -NoNewline}
-        Write-Host ""
+    } else {
+        Write-Host "$ADI Access to the requested directory denied." -ForegroundColor Red
     }
 }
 
