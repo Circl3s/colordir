@@ -12,12 +12,17 @@ $Icons = @{
     ".erl"  = [char]0xe7b1;
     ".beam" = [char]0xe7b1;
     ".rb"   = [char]0xe791;
-    ".py"   = [char]0xe73c;
+    ".py"   = [char]0xe606;
     ".java" = [char]0xe738;
     ".class"= [char]0xe738;
+    ".lua"  = [char]0xe620;
+    ".p8"   = [char]0xe620;
+    ".php"  = [char]0xe608;
+    ".hs"   = [char]0xe61f;
     ".js"   = [char]0xe74e;
     ".json" = [char]0xf668;
     ".html" = [char]0xe736;
+    ".url"  = [char]0xf08e;
     ".rs"   = [char]0xe7a8;
     ".ps1"  = [char]0xf120;
     ".psm1" = [char]0xf120;
@@ -38,6 +43,7 @@ $Icons = @{
     ".wav"  = [char]0xf028;
     ".ogg"  = [char]0xf028;
     ".mid"  = [char]0xe601;
+    ".sf2"  = [char]0xfb7b;
     ".zip"  = [char]0xf187;
     ".rar"  = [char]0xf187;
     ".7z"   = [char]0xf187;
@@ -181,6 +187,9 @@ function Get-ColoredItem {
                     "config" {$Icon = [char]0xe5fc}
                     "node_modules" {$Icon = [char]0xe5fa}
                     "src" {$Icon = [char]0xf121}
+                    ".vs" {$Icon = [char]0xfb0f}
+                    ".vscode" {$Icon = [char]0xfb0f}
+                    "__pycache__" {$Icon = [char]0xe606}
                     Default {$Icon = [char]0xe5ff}
                 }
             }
@@ -224,7 +233,7 @@ function Get-ColoredItem {
 
         foreach ($i in $Items) {
             if (!$NoIcons) {
-                $Icon = $Icons[$i.extension]
+                $Icon = $Icons[$i.extension.ToLower()]
                 if ($Icon -eq $_) {$Icon = $Icons[""]}
                 Switch ($True) {
                     ($i.Name -like "*LICENSE*") {$Icon = [char]0xf1f9}
