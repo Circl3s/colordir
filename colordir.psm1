@@ -94,7 +94,7 @@ function Get-ColoredItem {
         [ValidateSet("NameDescending", "NameAscending", "Newest", "Oldest", "SizeDescending", "SizeAscending")]
         [String]$SortBy = "NameAscending",
         [Switch]$Git = $False,
-        [Switch]$IgnoreFolderSize = $False,
+        [Switch]$FolderSize = $False,
         [Switch]$NoIcons = $False
     )
 
@@ -148,13 +148,13 @@ function Get-ColoredItem {
                 $Items = $Items | Sort-Object -Property Name
             }
             "SizeDescending" {
-                if (!$IgnoreFolderSize) {
+                if ($FolderSize) {
                     $Folders = $Folders | Sort-Object {(Get-ChildItem $_ -Recurse | Measure-Object -Property Length -Sum).sum} -Descending
                 }
                 $Items = $Items | Sort-Object -Property Length -Descending
             }
             "SizeAscending" {
-                if (!$IgnoreFolderSize) {
+                if ($FolderSize) {
                     $Folders = $Folders | Sort-Object {(Get-ChildItem $_ -Recurse | Measure-Object -Property Length -Sum).sum}
                 }
                 $Items = $Items | Sort-Object -Property Length
@@ -193,7 +193,7 @@ function Get-ColoredItem {
                     Default {$Icon = [char]0xe5ff}
                 }
             }
-            if (!$IgnoreFolderSize) {
+            if ($FolderSize) {
                 $r = Get-Size "$d" -Recursive
                 $size = $r[0]
                 $AccessDenied = $r[1]
