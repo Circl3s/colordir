@@ -301,7 +301,52 @@ function Get-ColoredItem {
 }
 
 function Get-ColoredTree {
+    
+    [CmdletBinding()]
+    param (
+        [String]$Dir = "./",
+        [Int]$Depth = 3,
+        [Switch]$Git = $False,
+        [Int]$Level = 1
+    )
 
+    if ($Level -eq 1) {
+        Write-Host "WORK IN PROGRESS`n" -ForegroundColor Red
+    }
+
+    $P = "│", "├", "└", "─"
+
+    $WillRun = $True
+
+    try {
+        $Folders = Get-ChildItem $Dir -Directory -Force -ErrorAction Stop
+        $Items = Get-ChildItem $Dir -File -Force -ErrorAction Stop    
+    } catch {
+        $WillRun = $False
+    }
+
+    if ($WillRun) {
+        Write-Host (Get-Item $Dir -Force).Name
+        if ($Depth -gt 0) {
+            foreach ($d in $Folders) {
+                $Last = ($d -eq $Folders[-1])
+                for ($i = 1; $i -le $Level; $i++) {
+                    if ($i -ne $Level) {
+                            $print = "│   "
+                    } else {
+                        if ($Last) {
+                            $print = "└───"
+                        } else {
+                            $print = "├───"
+                        }
+                    }
+                    Write-Host $print -NoNewline -ForegroundColor DarkCyan
+                }
+                Get-ColoredTree -Dir $d.FullName -Depth ($Depth - 1) -Level ($Level + 1)
+            }
+        }
+        
+    }
 }
 
 function Get-Size {
