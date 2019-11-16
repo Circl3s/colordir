@@ -7,7 +7,7 @@ A module meant to be a purely PowerShell alternative to the written in Ruby, mor
 - [x] File and folder size calculation
 - [x] Name trimming (if it doesn't fit on the screen)
 - [x] Different sorting
-- [ ] Git integration
+- [x] Git integration (Needs testing)
 - [ ] Tree view
 - [ ] Modularity of display
 
@@ -34,7 +34,6 @@ Until I publish it on Powershell Gallery, you'll need to
 ## Issues
 * File/folder name trimming doesn't quite work with some non-English symbols (for example Japanese file names)
 * It vomits non-terminating errors if the terminal is too small to even trim the file/folder names
-* Due to calculating folder sizes when run, running it for example in C:\ can take a **long** time. Use -IgnoreFolderSizes when necessary.
 * It doesn't like square brackets.
 
 ### If you see icons that are missing...

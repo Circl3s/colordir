@@ -1,3 +1,7 @@
+#
+# ─── CONSTANT DECLARATIONS ──────────────────────────────────────────────────────
+#
+
 $Icons = @{
     ".c"    = [char]0xe61e;
     ".h"    = [char]0xe61e;
@@ -8,6 +12,8 @@ $Icons = @{
     ".eex"  = [char]0xe62d;
     ".go"   = [char]0xe626;
     ".css"  = [char]0xe74a;
+    ".less" = [char]0xe60b;
+    ".scss" = [char]0xe603;
     ".d"    = [char]0xe7af;
     ".fs"   = [char]0xe7a7;
     ".erl"  = [char]0xe7b1;
@@ -25,8 +31,8 @@ $Icons = @{
     ".vue"  = [char]0xfd42;
     ".clj"  = [char]0xe768;
     ".dart" = [char]0xe798;
-    ".ts"   = [char]0xfbe4;
-    ".tsx"  = [char]0xfbe4;
+    ".ts"   = [char]0xe628;
+    ".tsx"  = [char]0xe628;
     ".json" = [char]0xf668;
     ".html" = [char]0xe736;
     ".url"  = [char]0xf08e;
@@ -69,12 +75,15 @@ $Icons = @{
     ".ppk"  = [char]0xf084;
     ".key"  = [char]0xf084;
     ".pub"  = [char]0xf084;
+    ".conf" = [char]0xf0ad;
+    ".ini"  = [char]0xf0ad;
     ""      = [char]0xf15b;
     ".torrent"  = [char]0xf019;
     ".gitignore"= [char]0xe702;
     ".gitconfig"= [char]0xe702;
     ".mcmeta"   = [char]0xf872;
     ".nomedia"  = [char]0xf070;
+    ".v"    = "V";
 }
 
 $GitColors = @{
@@ -91,6 +100,10 @@ $GitColors = @{
 }
 
 $ExecutableTypes = ".exe", ".msi", ".bat", ".ps1"
+
+#
+# ─── CMDLET FUNCTIONS ───────────────────────────────────────────────────────────
+#
 
 function Get-ColoredItem {
 
@@ -136,7 +149,7 @@ function Get-ColoredItem {
                     } else {
                         $commit = "Git:"
                     }
-                    Write-Host "$($commit) $(Invoke-Command {git show-branch --current})" -ForegroundColor Cyan
+                    Write-Host "$($commit) $(Invoke-Command {git log -1 --pretty=%B})" -ForegroundColor Cyan
                     $GitDiff = (Invoke-Command {git status --short}).Split("`n")
                 }
             } catch {
@@ -348,6 +361,10 @@ function Get-ColoredTree {
         
     }
 }
+
+#
+# ─── MISC FUNCTIONS ─────────────────────────────────────────────────────────────
+#
 
 function Get-Size {
 
